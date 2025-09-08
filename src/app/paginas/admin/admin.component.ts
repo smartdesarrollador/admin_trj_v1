@@ -7,6 +7,7 @@ import { AuthService } from '../../core/auth/services/auth.service';
 import { User } from '../../core/models/user.model';
 import { HasRoleDirective } from '../../core/directives/has-role.directive';
 import { ConfiguracionesService } from '../../core/services/configuraciones.service';
+import { NotificationComponent } from '../../shared/components/notification/notification.component';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -21,6 +22,7 @@ import { environment } from '../../../environments/environment';
     HasRoleDirective,
     AsyncPipe,
     NgStyle,
+    NotificationComponent,
   ],
   templateUrl: './admin.component.html',
   styleUrl: './admin.component.css',

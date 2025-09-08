@@ -3,6 +3,8 @@ export * from './directives/has-role.directive';
 
 // Re-exportar modelos
 export * from './models/configuracion.model';
+export * from './models/digital-card.model';
 
 // Re-exportar servicios
 export * from './services/configuraciones.service';
+export * from './services/digital-cards.service';

@@ -69,6 +69,17 @@
           <span>Banners</span>
         </div>
       </a>
+      <a
+        routerLink="/admin/tarjetas"
+        routerLinkActive="bg-gray-900"
+        class="p-3 hover:bg-gray-700 transition-colors"
+        appHasRole="administrador"
+      >
+        <div class="flex items-center">
+          <span class="material-icons mr-3">credit_card</span>
+          <span>Tarjetas Digitales</span>
+        </div>
+      </a>
     </nav>
   </aside>
 
@@ -324,6 +335,18 @@
           </div>
 
           <a
+            routerLink="/admin/tarjetas"
+            routerLinkActive="bg-gray-900"
+            class="p-3 hover:bg-gray-700 transition-colors"
+            appHasRole="administrador"
+          >
+            <div class="flex items-center">
+              <span class="material-icons mr-3">credit_card</span>
+              <span>Tarjetas Digitales</span>
+            </div>
+          </a>
+
+          <a
             routerLink="/admin/configuraciones"
             routerLinkActive="bg-gray-900"
             class="p-3 hover:bg-gray-700 transition-colors"
@@ -367,4 +390,7 @@
       <router-outlet></router-outlet>
     </main>
   </div>
+  
+  <!-- Componente de notificaciones -->
+  <app-notification></app-notification>
 </div>

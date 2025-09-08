@@ -103,6 +103,42 @@ export const routes: Routes = [
         title: 'Editar Banner',
       },
       {
+        path: 'tarjetas',
+        loadComponent: () =>
+          import(
+            './paginas/admin/tarjetas/tarjeta-list/tarjeta-list.component'
+          ).then((m) => m.TarjetaListComponent),
+        canActivate: [roleGuard(['administrador'])],
+        title: 'Gestión de Tarjetas Digitales',
+      },
+      {
+        path: 'tarjetas/crear',
+        loadComponent: () =>
+          import(
+            './paginas/admin/tarjetas/tarjeta-create/tarjeta-create.component'
+          ).then((m) => m.TarjetaCreateComponent),
+        canActivate: [roleGuard(['administrador'])],
+        title: 'Crear Tarjeta Digital',
+      },
+      {
+        path: 'tarjetas/editar/:id',
+        loadComponent: () =>
+          import(
+            './paginas/admin/tarjetas/tarjeta-edit/tarjeta-edit.component'
+          ).then((m) => m.TarjetaEditComponent),
+        canActivate: [roleGuard(['administrador'])],
+        title: 'Editar Tarjeta Digital',
+      },
+      {
+        path: 'tarjetas/detalle/:id',
+        loadComponent: () =>
+          import(
+            './paginas/admin/tarjetas/tarjeta-detail/tarjeta-detail.component'
+          ).then((m) => m.TarjetaDetailComponent),
+        canActivate: [roleGuard(['administrador'])],
+        title: 'Detalle de Tarjeta Digital',
+      },
+      {
         path: 'register',
         loadComponent: () =>
           import('./paginas/auth/register/register.component').then(
