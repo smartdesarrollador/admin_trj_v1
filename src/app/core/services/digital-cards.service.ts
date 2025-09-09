@@ -88,8 +88,16 @@ export class DigitalCardsService {
    * Consume: POST /api/digital-cards/{id}/upload-image
    */
   uploadImage(id: number, file: File): Observable<ImageUploadResponse> {
+    console.log('Service uploadImage called with:', { id, file });
+    console.log('File details:', { name: file.name, size: file.size, type: file.type });
+    
     const formData = new FormData();
     formData.append('image', file);
+    
+    // Verificar contenido del FormData
+    console.log('FormData created successfully');
+    console.log('FormData has image field:', formData.has('image'));
+    
     return this.apiService.post<ImageUploadResponse>(
       `${this.endpoint}/${id}/upload-image`,
       formData

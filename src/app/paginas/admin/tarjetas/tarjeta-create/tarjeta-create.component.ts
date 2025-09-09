@@ -231,8 +231,15 @@ export class TarjetaCreateComponent implements OnInit {
   }
 
   private uploadImage(cardId: number): void {
-    if (!this.imagenSeleccionada) return;
+    console.log('uploadImage called with cardId:', cardId);
+    console.log('imagenSeleccionada:', this.imagenSeleccionada);
+    
+    if (!this.imagenSeleccionada) {
+      console.log('No hay imagen seleccionada');
+      return;
+    }
 
+    console.log('Iniciando subida de imagen...');
     this.digitalCardsService.uploadImage(cardId, this.imagenSeleccionada).subscribe({
       next: () => {
         this.notificationService.imageUploaded();

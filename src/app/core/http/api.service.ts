@@ -38,6 +38,37 @@ export class ApiService {
     return headers;
   }
 
+  private getHeadersForBody(body: any): HttpHeaders {
+    // Obtener el token JWT del localStorage
+    const tokenJson = localStorage.getItem(this.TOKEN_KEY);
+    let token = null;
+
+    if (tokenJson) {
+      try {
+        const tokenData = JSON.parse(tokenJson);
+        token = tokenData.access_token;
+      } catch (e) {
+        console.error('Error al parsear el token:', e);
+      }
+    }
+
+    // Si el body es FormData, no establecer Content-Type
+    if (body instanceof FormData) {
+      let headers = new HttpHeaders({
+        Accept: 'application/json',
+      });
+
+      if (token) {
+        headers = headers.set('Authorization', `Bearer ${token}`);
+      }
+
+      return headers;
+    }
+
+    // Para otros tipos de body, usar headers normales
+    return this.getHeaders();
+  }
+
   get<T>(path: string): Observable<T> {
     return this.http.get<T>(`${this.baseUrl}/${path}`, {
       headers: this.getHeaders(),
@@ -45,8 +76,9 @@ export class ApiService {
   }
 
   post<T>(path: string, body: any): Observable<T> {
+    const headers = this.getHeadersForBody(body);
     return this.http.post<T>(`${this.baseUrl}/${path}`, body, {
-      headers: this.getHeaders(),
+      headers: headers,
     });
   }
 
