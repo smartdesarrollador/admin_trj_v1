@@ -108,7 +108,7 @@ export const routes: Routes = [
           import(
             './paginas/admin/tarjetas/tarjeta-list/tarjeta-list.component'
           ).then((m) => m.TarjetaListComponent),
-        canActivate: [roleGuard(['administrador'])],
+        canActivate: [roleGuard(['administrador', 'autor'])],
         title: 'Gestión de Tarjetas Digitales',
       },
       {
@@ -117,7 +117,7 @@ export const routes: Routes = [
           import(
             './paginas/admin/tarjetas/tarjeta-create/tarjeta-create.component'
           ).then((m) => m.TarjetaCreateComponent),
-        canActivate: [roleGuard(['administrador'])],
+        canActivate: [roleGuard(['administrador', 'autor'])],
         title: 'Crear Tarjeta Digital',
       },
       {
@@ -126,7 +126,7 @@ export const routes: Routes = [
           import(
             './paginas/admin/tarjetas/tarjeta-edit/tarjeta-edit.component'
           ).then((m) => m.TarjetaEditComponent),
-        canActivate: [roleGuard(['administrador'])],
+        canActivate: [roleGuard(['administrador', 'autor'])],
         title: 'Editar Tarjeta Digital',
       },
       {
@@ -135,7 +135,7 @@ export const routes: Routes = [
           import(
             './paginas/admin/tarjetas/tarjeta-detail/tarjeta-detail.component'
           ).then((m) => m.TarjetaDetailComponent),
-        canActivate: [roleGuard(['administrador'])],
+        canActivate: [roleGuard(['administrador', 'autor'])],
         title: 'Detalle de Tarjeta Digital',
       },
       {

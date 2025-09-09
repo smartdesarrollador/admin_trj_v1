@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -10,6 +10,7 @@ import {
 import { Router } from '@angular/router';
 import { DigitalCardsService } from '../../../../core/services/digital-cards.service';
 import { CreateDigitalCardRequest } from '../../../../core/models/digital-card.model';
+import { NotificationService } from '../../../../shared/services/notification.service';
 
 @Component({
   selector: 'app-tarjeta-create',
@@ -22,11 +23,12 @@ export class TarjetaCreateComponent implements OnInit {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private digitalCardsService = inject(DigitalCardsService);
+  private notificationService = inject(NotificationService);
 
   tarjetaForm!: FormGroup;
-  isLoading = false;
-  errorMessage: string | null = null;
-  successMessage: string | null = null;
+  isLoading = signal(false);
+  errorMessage = signal<string | null>(null);
+  successMessage = signal<string | null>(null);
 
   // Variables para manejo de imagen
   imagenSeleccionada: File | null = null;
@@ -114,18 +116,18 @@ export class TarjetaCreateComponent implements OnInit {
       
       // Validar tipo de archivo
       if (!file.type.startsWith('image/')) {
-        this.errorMessage = 'Por favor seleccione un archivo de imagen válido.';
+        this.notificationService.error('Archivo inválido', 'Por favor seleccione un archivo de imagen válido.');
         return;
       }
 
       // Validar tamaño (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
-        this.errorMessage = 'La imagen no debe superar los 2MB.';
+        this.notificationService.error('Archivo muy grande', 'La imagen no debe superar los 2MB.');
         return;
       }
 
       this.imagenSeleccionada = file;
-      this.errorMessage = null;
+      this.errorMessage.set(null);
 
       // Crear vista previa
       const reader = new FileReader();
@@ -178,12 +180,12 @@ export class TarjetaCreateComponent implements OnInit {
   onSubmit(): void {
     if (this.tarjetaForm.invalid) {
       this.markAllGroupsAsTouched();
-      this.errorMessage = 'Por favor complete todos los campos requeridos correctamente.';
+      this.notificationService.validationError();
       return;
     }
 
-    this.isLoading = true;
-    this.errorMessage = null;
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
 
     // Preparar datos para la API
     const formValue = this.tarjetaForm.value;
@@ -201,24 +203,26 @@ export class TarjetaCreateComponent implements OnInit {
       is_public: formValue.settings.is_public,
     };
 
+    const cardName = formValue.personalInfo.name || 'Nueva tarjeta';
+
     this.digitalCardsService.createDigitalCard(requestData).subscribe({
       next: (response) => {
-        this.isLoading = false;
-        this.successMessage = 'Tarjeta digital creada exitosamente.';
+        this.isLoading.set(false);
+        this.notificationService.cardCreated(cardName);
 
         // Si hay imagen, subirla
         if (this.imagenSeleccionada && response.data.id) {
           this.uploadImage(response.data.id);
         } else {
-          // Redireccionar después de 1.5 segundos
+          // Redireccionar después de 2 segundos
           setTimeout(() => {
             this.router.navigate(['/admin/tarjetas']);
-          }, 1500);
+          }, 2000);
         }
       },
       error: (error) => {
-        this.isLoading = false;
-        this.errorMessage = 'Error al crear la tarjeta digital. Verifique los datos e intente nuevamente.';
+        this.isLoading.set(false);
+        this.notificationService.handleApiError(error, 'crear la tarjeta digital');
         console.error('Error al crear tarjeta:', error);
       },
     });
@@ -229,17 +233,19 @@ export class TarjetaCreateComponent implements OnInit {
 
     this.digitalCardsService.uploadImage(cardId, this.imagenSeleccionada).subscribe({
       next: () => {
+        this.notificationService.imageUploaded();
         // Redireccionar después de subir la imagen
         setTimeout(() => {
           this.router.navigate(['/admin/tarjetas']);
-        }, 1500);
+        }, 2000);
       },
       error: (error) => {
         console.error('Error al subir imagen:', error);
+        this.notificationService.imageUploadError('No se pudo subir la imagen, pero la tarjeta se creó exitosamente.');
         // Aún así redirigir, la tarjeta se creó exitosamente
         setTimeout(() => {
           this.router.navigate(['/admin/tarjetas']);
-        }, 1500);
+        }, 2000);
       },
     });
   }

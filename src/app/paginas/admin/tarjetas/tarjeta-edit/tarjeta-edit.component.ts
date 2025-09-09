@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -9,6 +9,8 @@ import {
 } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DigitalCardsService } from '../../../../core/services/digital-cards.service';
+import { NotificationService } from '../../../../shared/services/notification.service';
+import { environment } from '../../../../../environments/environment';
 import { 
   DigitalCard, 
   UpdateDigitalCardRequest 
@@ -26,14 +28,15 @@ export class TarjetaEditComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private digitalCardsService = inject(DigitalCardsService);
+  private notificationService = inject(NotificationService);
 
   tarjetaForm!: FormGroup;
-  isLoading = false;
-  isLoadingData = true;
-  errorMessage: string | null = null;
-  successMessage: string | null = null;
+  isLoading = signal(false);
+  isLoadingData = signal(true);
+  errorMessage = signal<string | null>(null);
+  successMessage = signal<string | null>(null);
   tarjetaId!: number;
-  tarjetaData: DigitalCard | null = null;
+  tarjetaData = signal<DigitalCard | null>(null);
 
   // Variables para manejo de imagen
   imagenSeleccionada: File | null = null;
@@ -93,70 +96,71 @@ export class TarjetaEditComponent implements OnInit {
   }
 
   cargarTarjeta(): void {
-    this.isLoadingData = true;
+    this.isLoadingData.set(true);
     this.digitalCardsService.getDigitalCard(this.tarjetaId).subscribe({
       next: (response) => {
-        this.tarjetaData = response.data;
+        this.tarjetaData.set(response.data);
         this.llenarFormulario();
-        this.isLoadingData = false;
+        this.isLoadingData.set(false);
       },
       error: (error) => {
         console.error('Error al cargar tarjeta:', error);
-        this.errorMessage = 'Error al cargar la tarjeta. Redirigiendo...';
+        this.notificationService.error('Error al cargar datos', 'No se pudo cargar la información de la tarjeta. Redirigiendo...');
         setTimeout(() => {
           this.router.navigate(['/admin/tarjetas']);
-        }, 2000);
+        }, 3000);
       }
     });
   }
 
   llenarFormulario(): void {
-    if (!this.tarjetaData) return;
+    const tarjeta = this.tarjetaData();
+    if (!tarjeta) return;
 
     // Llenar información personal
     this.tarjetaForm.patchValue({
       personalInfo: {
-        name: this.tarjetaData.personal_info?.name || '',
-        title: this.tarjetaData.personal_info?.title || '',
-        location: this.tarjetaData.personal_info?.location || '',
-        photo: this.tarjetaData.personal_info?.photo || '',
+        name: tarjeta.personal_info?.name || '',
+        title: tarjeta.personal_info?.title || '',
+        location: tarjeta.personal_info?.location || '',
+        photo: tarjeta.personal_info?.photo || '',
       },
       contact: {
-        email: this.tarjetaData.contact_info?.email || '',
-        phone: this.tarjetaData.contact_info?.phone || '',
-        website: this.tarjetaData.contact_info?.website || '',
-        linkedin: this.tarjetaData.contact_info?.linkedin || '',
-        twitter: this.tarjetaData.contact_info?.twitter || '',
-        instagram: this.tarjetaData.contact_info?.instagram || '',
-        github: this.tarjetaData.contact_info?.github || '',
-        youtube: this.tarjetaData.contact_info?.youtube || '',
-        tiktok: this.tarjetaData.contact_info?.tiktok || '',
-        whatsapp: this.tarjetaData.contact_info?.whatsapp || '',
-        facebook: this.tarjetaData.contact_info?.facebook || '',
+        email: tarjeta.contact_info?.email || '',
+        phone: tarjeta.contact_info?.phone || '',
+        website: tarjeta.contact_info?.website || '',
+        linkedin: tarjeta.contact_info?.linkedin || '',
+        twitter: tarjeta.contact_info?.twitter || '',
+        instagram: tarjeta.contact_info?.instagram || '',
+        github: tarjeta.contact_info?.github || '',
+        youtube: tarjeta.contact_info?.youtube || '',
+        tiktok: tarjeta.contact_info?.tiktok || '',
+        whatsapp: tarjeta.contact_info?.whatsapp || '',
+        facebook: tarjeta.contact_info?.facebook || '',
       },
       about: {
-        description: this.tarjetaData.about_info?.description || '',
-        experience: this.tarjetaData.about_info?.experience || 0,
+        description: tarjeta.about_info?.description || '',
+        experience: tarjeta.about_info?.experience || 0,
       },
       settings: {
-        is_active: this.tarjetaData.is_active,
-        is_public: this.tarjetaData.is_public,
+        is_active: tarjeta.is_active,
+        is_public: tarjeta.is_public,
       }
     });
 
     // Llenar skills
-    if (this.tarjetaData.about_info?.skills) {
+    if (tarjeta.about_info?.skills) {
       const skillsArray = this.skillsArray;
       skillsArray.clear();
-      this.tarjetaData.about_info.skills.forEach(skill => {
+      tarjeta.about_info.skills.forEach(skill => {
         skillsArray.push(this.fb.control(skill, [Validators.required, Validators.maxLength(50)]));
       });
     }
 
     // Establecer imagen actual
-    if (this.tarjetaData.personal_info?.photo) {
-      this.imagenActual = this.tarjetaData.personal_info.photo;
-      this.previewImagen = this.obtenerUrlImagen(this.tarjetaData.personal_info.photo);
+    if (tarjeta.personal_info?.photo) {
+      this.imagenActual = tarjeta.personal_info.photo;
+      this.previewImagen = this.obtenerUrlImagen(tarjeta.personal_info.photo);
     }
   }
 
@@ -194,18 +198,18 @@ export class TarjetaEditComponent implements OnInit {
       
       // Validar tipo de archivo
       if (!file.type.startsWith('image/')) {
-        this.errorMessage = 'Por favor seleccione un archivo de imagen válido.';
+        this.notificationService.error('Archivo inválido', 'Por favor seleccione un archivo de imagen válido.');
         return;
       }
 
       // Validar tamaño (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
-        this.errorMessage = 'La imagen no debe superar los 2MB.';
+        this.notificationService.error('Archivo muy grande', 'La imagen no debe superar los 2MB.');
         return;
       }
 
       this.imagenSeleccionada = file;
-      this.errorMessage = null;
+      this.errorMessage.set(null);
 
       // Crear vista previa
       const reader = new FileReader();
@@ -251,12 +255,12 @@ export class TarjetaEditComponent implements OnInit {
   onSubmit(): void {
     if (this.tarjetaForm.invalid) {
       this.markAllGroupsAsTouched();
-      this.errorMessage = 'Por favor complete todos los campos requeridos correctamente.';
+      this.notificationService.validationError();
       return;
     }
 
-    this.isLoading = true;
-    this.errorMessage = null;
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
 
     // Preparar datos para la API
     const formValue = this.tarjetaForm.value;
@@ -271,45 +275,49 @@ export class TarjetaEditComponent implements OnInit {
       is_public: formValue.settings.is_public,
     };
 
+    const cardName = formValue.personalInfo.name || 'Tarjeta';
+
     this.digitalCardsService.updateDigitalCard(this.tarjetaId, requestData).subscribe({
       next: (response) => {
         // Si hay imagen nueva, subirla
         if (this.imagenSeleccionada) {
-          this.uploadImage();
+          this.uploadImage(cardName);
         } else {
-          this.isLoading = false;
-          this.successMessage = 'Tarjeta digital actualizada exitosamente.';
+          this.isLoading.set(false);
+          this.notificationService.cardUpdated(cardName);
           setTimeout(() => {
             this.router.navigate(['/admin/tarjetas']);
-          }, 1500);
+          }, 2000);
         }
       },
       error: (error) => {
-        this.isLoading = false;
-        this.errorMessage = 'Error al actualizar la tarjeta digital. Verifique los datos e intente nuevamente.';
+        this.isLoading.set(false);
+        this.notificationService.handleApiError(error, 'actualizar la tarjeta');
         console.error('Error al actualizar tarjeta:', error);
       },
     });
   }
 
-  private uploadImage(): void {
+  private uploadImage(cardName: string): void {
     if (!this.imagenSeleccionada) return;
 
     this.digitalCardsService.uploadImage(this.tarjetaId, this.imagenSeleccionada).subscribe({
       next: () => {
-        this.isLoading = false;
-        this.successMessage = 'Tarjeta digital actualizada exitosamente.';
-        setTimeout(() => {
-          this.router.navigate(['/admin/tarjetas']);
-        }, 1500);
-      },
-      error: (error) => {
-        this.isLoading = false;
-        this.successMessage = 'Tarjeta actualizada. Hubo un problema al subir la imagen.';
-        console.error('Error al subir imagen:', error);
+        this.isLoading.set(false);
+        this.notificationService.cardUpdated(cardName);
+        this.notificationService.imageUploaded();
         setTimeout(() => {
           this.router.navigate(['/admin/tarjetas']);
         }, 2000);
+      },
+      error: (error) => {
+        this.isLoading.set(false);
+        this.notificationService.cardUpdated(cardName);
+        this.notificationService.imageUploadError('Tarjeta actualizada correctamente, pero hubo un problema al subir la imagen.');
+        console.error('Error al subir imagen:', error);
+        setTimeout(() => {
+          this.router.navigate(['/admin/tarjetas']);
+        }, 3000);
       },
     });
   }
@@ -344,7 +352,30 @@ export class TarjetaEditComponent implements OnInit {
     if (rutaImagen.startsWith('http')) {
       return rutaImagen;
     }
-    return `http://localhost:8000/storage/${rutaImagen}`;
+    return `${environment.urlDominioApi}/${rutaImagen}`;
+  }
+
+  // Función para eliminar imagen existente
+  eliminarImagenActual(): void {
+    if (!this.imagenActual) return;
+
+    this.notificationService.confirmDelete(
+      'la imagen actual',
+      () => {
+        this.digitalCardsService.deleteImage(this.tarjetaId).subscribe({
+          next: () => {
+            this.imagenActual = null;
+            this.previewImagen = null;
+            this.imagenSeleccionada = null;
+            this.notificationService.success('Imagen eliminada', 'La imagen se eliminó correctamente.');
+          },
+          error: (error) => {
+            console.error('Error al eliminar imagen:', error);
+            this.notificationService.error('Error al eliminar', 'No se pudo eliminar la imagen.');
+          }
+        });
+      }
+    );
   }
 
   // Funciones auxiliares para validaciones

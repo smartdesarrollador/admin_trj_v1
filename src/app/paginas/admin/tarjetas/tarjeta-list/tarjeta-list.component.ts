@@ -26,6 +26,13 @@ export class TarjetaListComponent implements OnInit {
   perPage = signal<number>(10);
   totalCards = signal<number>(0);
   totalPages = signal<number>(0);
+  
+  // Filtros avanzados
+  statusFilter = signal<'all' | 'active' | 'inactive'>('all');
+  visibilityFilter = signal<'all' | 'public' | 'private'>('all');
+  sortBy = signal<'name' | 'created_at' | 'updated_at'>('created_at');
+  sortOrder = signal<'asc' | 'desc'>('desc');
+  showAdvancedFilters = signal(false);
 
   // Hacer Math disponible en el template
   Math = Math;
@@ -42,6 +49,10 @@ export class TarjetaListComponent implements OnInit {
       page: this.currentPage(),
       per_page: this.perPage(),
       search: this.searchTerm() || undefined,
+      status: this.statusFilter() !== 'all' ? this.statusFilter() : undefined,
+      visibility: this.visibilityFilter() !== 'all' ? this.visibilityFilter() : undefined,
+      sort_by: this.sortBy(),
+      sort_order: this.sortOrder(),
     };
 
     this.digitalCardsService.getDigitalCards(params).subscribe({
@@ -73,22 +84,46 @@ export class TarjetaListComponent implements OnInit {
   }
 
   toggleStatusCard(card: DigitalCard, field: 'is_active' | 'is_public'): void {
-    const newStatus = { [field]: !card[field] };
+    const newValue = !card[field];
+    const newStatus = { [field]: newValue };
     const cardName = card.personal_info?.name || `Tarjeta #${card.id}`;
     const fieldName = field === 'is_active' ? 'estado activo' : 'visibilidad pública';
-    const newValue = newStatus[field] ? 'activado' : 'desactivado';
+    const actionText = newValue ? 'activando' : 'desactivando';
+
+    // Optimistic update - actualizar UI inmediatamente
+    this.digitalCards.update((cards) =>
+      cards.map((c) => (c.id === card.id ? { ...c, [field]: newValue } : c))
+    );
+
+    // Mostrar feedback visual inmediato
+    const loadingId = this.notificationService.info(
+      `${actionText.charAt(0).toUpperCase() + actionText.slice(1)}...`,
+      `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} ${fieldName} de "${cardName}"`
+    );
     
     this.digitalCardsService.toggleStatus(card.id, newStatus).subscribe({
       next: (response) => {
+        this.notificationService.remove(loadingId);
+        
+        // Actualizar con datos del servidor
         this.digitalCards.update((cards) =>
           cards.map((c) => (c.id === response.data.id ? response.data : c))
         );
+        
+        const finalValue = response.data[field] ? 'activado' : 'desactivado';
         this.notificationService.success(
           'Estado actualizado',
-          `El ${fieldName} de "${cardName}" ha sido ${newValue}.`
+          `El ${fieldName} de "${cardName}" ha sido ${finalValue}.`
         );
       },
       error: (err) => {
+        this.notificationService.remove(loadingId);
+        
+        // Revertir optimistic update en caso de error
+        this.digitalCards.update((cards) =>
+          cards.map((c) => (c.id === card.id ? { ...c, [field]: !newValue } : c))
+        );
+        
         console.error(`Error al cambiar ${field} de la tarjeta`, err);
         this.notificationService.handleApiError(err, `cambiar ${fieldName}`);
       },
@@ -99,30 +134,51 @@ export class TarjetaListComponent implements OnInit {
     const card = this.digitalCards().find(c => c.id === id);
     const cardName = card?.personal_info?.name || `Tarjeta #${id}`;
 
-    // Usar el sistema de confirmación mejorado
-    this.notificationService.confirmDelete(
-      cardName,
-      () => {
-        // Acción de confirmar eliminación
-        this.digitalCardsService.deleteDigitalCard(id).subscribe({
-          next: () => {
-            this.digitalCards.update((cards) =>
-              cards.filter((card) => card.id !== id)
-            );
-            this.totalCards.update((total) => total - 1);
-            this.notificationService.cardDeleted(cardName);
+    // Confirmación avanzada con más información
+    this.notificationService.withActions(
+      'warning',
+      `¿Eliminar "${cardName}"?`,
+      `Esta acción eliminará permanentemente la tarjeta digital y no se puede deshacer. También se eliminarán todas las imágenes asociadas.`,
+      [
+        {
+          label: 'Cancelar',
+          action: () => {
+            this.notificationService.info('Operación cancelada', 'La tarjeta no ha sido eliminada.');
           },
-          error: (err) => {
-            console.error('Error al eliminar la tarjeta', err);
-            this.notificationService.cardDeleteError(cardName);
+          style: 'secondary'
+        },
+        {
+          label: 'Eliminar definitivamente',
+          action: () => {
+            this.confirmarEliminacionFinal(id, cardName);
           },
-        });
-      },
-      () => {
-        // Acción de cancelar (opcional)
-        this.notificationService.info('Operación cancelada', 'La tarjeta no ha sido eliminada.');
-      }
+          style: 'primary'
+        }
+      ]
     );
+  }
+
+  private confirmarEliminacionFinal(id: number, cardName: string): void {
+    const loadingId = this.notificationService.showLoadingWithProgress(
+      'Eliminando tarjeta',
+      'Eliminando tarjeta digital y archivos asociados...'
+    );
+
+    this.digitalCardsService.deleteDigitalCard(id).subscribe({
+      next: () => {
+        this.notificationService.remove(loadingId);
+        this.digitalCards.update((cards) =>
+          cards.filter((card) => card.id !== id)
+        );
+        this.totalCards.update((total) => total - 1);
+        this.notificationService.cardDeleted(cardName);
+      },
+      error: (err) => {
+        this.notificationService.remove(loadingId);
+        console.error('Error al eliminar la tarjeta', err);
+        this.notificationService.handleApiError(err, 'eliminar la tarjeta');
+      },
+    });
   }
 
   obtenerUrlImagen(rutaImagen?: string): string {
@@ -140,6 +196,106 @@ export class TarjetaListComponent implements OnInit {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+    });
+  }
+
+  // Métodos para filtros avanzados
+  toggleAdvancedFilters(): void {
+    this.showAdvancedFilters.set(!this.showAdvancedFilters());
+  }
+
+  applyFilters(): void {
+    this.currentPage.set(1);
+    this.cargarTarjetas();
+  }
+
+  clearFilters(): void {
+    this.statusFilter.set('all');
+    this.visibilityFilter.set('all');
+    this.sortBy.set('created_at');
+    this.sortOrder.set('desc');
+    this.searchTerm.set('');
+    this.currentPage.set(1);
+    this.cargarTarjetas();
+  }
+
+  setSortBy(field: 'name' | 'created_at' | 'updated_at'): void {
+    if (this.sortBy() === field) {
+      // Si es el mismo campo, cambiar el orden
+      this.sortOrder.set(this.sortOrder() === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Si es un campo diferente, establecer orden descendente por defecto
+      this.sortBy.set(field);
+      this.sortOrder.set('desc');
+    }
+    this.currentPage.set(1);
+    this.cargarTarjetas();
+  }
+
+  getSortIcon(field: 'name' | 'created_at' | 'updated_at'): string {
+    if (this.sortBy() !== field) return 'sort';
+    return this.sortOrder() === 'asc' ? 'sort-asc' : 'sort-desc';
+  }
+
+  duplicarTarjeta(id: number): void {
+    const card = this.digitalCards().find(c => c.id === id);
+    if (!card) return;
+
+    const cardName = card.personal_info?.name || `Tarjeta #${id}`;
+    
+    this.notificationService.withActions(
+      'info',
+      `¿Duplicar "${cardName}"?`,
+      'Se creará una copia exacta de esta tarjeta digital con todos sus datos. Podrás editarla después.',
+      [
+        {
+          label: 'Cancelar',
+          action: () => {},
+          style: 'secondary'
+        },
+        {
+          label: 'Duplicar tarjeta',
+          action: () => {
+            this.confirmarDuplicacion(card, cardName);
+          },
+          style: 'primary'
+        }
+      ]
+    );
+  }
+
+  private confirmarDuplicacion(card: DigitalCard, cardName: string): void {
+    const loadingId = this.notificationService.showLoadingWithProgress(
+      'Duplicando tarjeta',
+      `Creando copia de "${cardName}"...`
+    );
+
+    // Preparar datos para duplicación
+    const duplicateData = {
+      personalInfo: {
+        ...card.personal_info,
+        name: `${card.personal_info?.name || 'Tarjeta'} (Copia)`,
+      },
+      contact: card.contact_info,
+      about: card.about_info,
+      is_active: false,
+      is_public: false,
+    };
+
+    this.digitalCardsService.createDigitalCard(duplicateData as any).subscribe({
+      next: (response) => {
+        this.notificationService.remove(loadingId);
+        this.notificationService.success(
+          'Tarjeta duplicada',
+          `Se ha creado una copia de "${cardName}" exitosamente.`
+        );
+        this.cargarTarjetas(); // Recargar lista
+      },
+      error: (error) => {
+        this.notificationService.remove(loadingId);
+        console.error('Error al duplicar tarjeta:', error);
+        this.notificationService.handleApiError(error, 'duplicar la tarjeta');
+      }
     });
   }
 }

@@ -38,10 +38,10 @@ export class HasRoleDirective implements OnInit {
       return;
     }
 
-    // Convertir a array si es un string
+    // Convertir a array si es un string (manejando roles separados por comas)
     const allowedRoles = Array.isArray(this.appHasRole)
       ? this.appHasRole
-      : [this.appHasRole];
+      : this.appHasRole.split(',').map(role => role.trim());
 
     // Verificar si el usuario tiene al menos uno de los roles permitidos
     const hasRole = allowedRoles.includes(user.rol);
