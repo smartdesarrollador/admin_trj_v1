@@ -344,9 +344,9 @@ export class TarjetaEditComponent implements OnInit {
     // Preparar datos para la API
     const formValue = this.tarjetaForm.value;
     const requestData: UpdateDigitalCardRequest = {
-      personalInfo: formValue.personalInfo,
-      contact: this.hasContactData() ? formValue.contact : undefined,
-      about: this.hasAboutData() ? {
+      personal_info: formValue.personalInfo,
+      contact_info: this.hasContactData() ? formValue.contact : undefined,
+      about_info: this.hasAboutData() ? {
         ...formValue.about,
         skills: this.skillsArray.value.filter((skill: string) => skill.trim() !== ''),
       } : undefined,

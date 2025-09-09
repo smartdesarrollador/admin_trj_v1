@@ -190,14 +190,14 @@ export class TarjetaCreateComponent implements OnInit {
     // Preparar datos para la API
     const formValue = this.tarjetaForm.value;
     const requestData: CreateDigitalCardRequest = {
-      personalInfo: {
+      personal_info: {
         name: formValue.personalInfo.name,
         title: formValue.personalInfo.title || undefined,
         location: formValue.personalInfo.location || undefined,
         // No enviamos photo aquí, se sube por separado
       },
-      contact: this.hasContactData() ? formValue.contact : undefined,
-      about: this.hasAboutData() ? {
+      contact_info: this.hasContactData() ? formValue.contact : undefined,
+      about_info: this.hasAboutData() ? {
         ...formValue.about,
         skills: this.skillsArray.value.filter((skill: string) => skill.trim() !== ''),
       } : undefined,
