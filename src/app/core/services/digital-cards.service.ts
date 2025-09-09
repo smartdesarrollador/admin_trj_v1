@@ -61,14 +61,14 @@ export class DigitalCardsService {
 
   /**
    * Actualizar tarjeta
-   * Consume: PUT /api/digital-cards/{id}
+   * Consume: POST /api/digital-cards/{id}/update
    */
   updateDigitalCard(
     id: number,
     data: UpdateDigitalCardRequest
   ): Observable<DigitalCardApiResponse> {
-    return this.apiService.put<DigitalCardApiResponse>(
-      `${this.endpoint}/${id}`,
+    return this.apiService.post<DigitalCardApiResponse>(
+      `${this.endpoint}/${id}/update`,
       data
     );
   }
@@ -108,13 +108,13 @@ export class DigitalCardsService {
 
   /**
    * Cambiar estado
-   * Consume: PUT /api/digital-cards/{id}/toggle-status
+   * Consume: POST /api/digital-cards/{id}/toggle-status
    */
   toggleStatus(
     id: number,
     status: { is_active?: boolean; is_public?: boolean }
   ): Observable<DigitalCardApiResponse> {
-    return this.apiService.put<DigitalCardApiResponse>(
+    return this.apiService.post<DigitalCardApiResponse>(
       `${this.endpoint}/${id}/toggle-status`,
       status
     );
