@@ -32,8 +32,8 @@
       <div class="relative max-w-md">
         <input
           type="text"
-          [(ngModel)]="searchTerm"
-          (input)="onSearch()"
+          [value]="searchTerm()"
+          (input)="searchTerm.set($any($event.target).value); onSearch()"
           placeholder="Buscar tarjetas por nombre..."
           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
