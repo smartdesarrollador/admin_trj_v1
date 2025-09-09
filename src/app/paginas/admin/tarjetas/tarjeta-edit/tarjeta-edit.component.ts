@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -29,6 +29,7 @@ export class TarjetaEditComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private digitalCardsService = inject(DigitalCardsService);
   private notificationService = inject(NotificationService);
+  private cdr = inject(ChangeDetectorRef);
 
   tarjetaForm!: FormGroup;
   isLoading = signal(false);
@@ -48,14 +49,18 @@ export class TarjetaEditComponent implements OnInit {
   totalSteps = 4;
 
   ngOnInit(): void {
+    console.log('🚀 === DEBUG ngOnInit ===');
     this.route.params.subscribe(params => {
       this.tarjetaId = +params['id'];
+      console.log('📝 Inicializando formulario...');
       this.inicializarFormulario();
+      console.log('📡 Cargando tarjeta...');
       this.cargarTarjeta();
     });
   }
 
   inicializarFormulario(): void {
+    console.log('🛠️ === DEBUG inicializarFormulario ===');
     this.tarjetaForm = this.fb.group({
       // Información Personal (Requerida)
       personalInfo: this.fb.group({
@@ -93,15 +98,28 @@ export class TarjetaEditComponent implements OnInit {
         is_public: [true],
       }),
     });
+    console.log('✅ Formulario inicializado. Estado inicial:', this.tarjetaForm.value);
   }
 
   cargarTarjeta(): void {
+    console.log('=== DEBUG cargarTarjeta ===');
+    console.log('ID de tarjeta a cargar:', this.tarjetaId);
     this.isLoadingData.set(true);
     this.digitalCardsService.getDigitalCard(this.tarjetaId).subscribe({
       next: (response) => {
+        console.log('✅ Respuesta exitosa de la API:', response);
         this.tarjetaData.set(response.data);
-        this.llenarFormulario();
+        console.log('Datos guardados en tarjetaData signal:', this.tarjetaData());
+        
+        // Establecer isLoadingData a false ANTES de llenar el formulario
         this.isLoadingData.set(false);
+        console.log('📱 isLoadingData establecido a false');
+        
+        // Dar tiempo al DOM para renderizar el formulario, LUEGO llenarlo
+        setTimeout(() => {
+          console.log('⏰ Ejecutando llenarFormulario después del renderizado...');
+          this.llenarFormulario();
+        }, 200);
       },
       error: (error) => {
         console.error('Error al cargar tarjeta:', error);
@@ -115,10 +133,16 @@ export class TarjetaEditComponent implements OnInit {
 
   llenarFormulario(): void {
     const tarjeta = this.tarjetaData();
-    if (!tarjeta) return;
+    console.log('=== DEBUG llenarFormulario ===');
+    console.log('Datos tarjeta:', tarjeta);
+    console.log('¿Tarjeta existe?:', !!tarjeta);
+    
+    if (!tarjeta) {
+      console.log('❌ No hay datos de tarjeta, saliendo...');
+      return;
+    }
 
-    // Llenar información personal
-    this.tarjetaForm.patchValue({
+    const datosParaPatch = {
       personalInfo: {
         name: tarjeta.personal_info?.name || '',
         title: tarjeta.personal_info?.title || '',
@@ -146,7 +170,62 @@ export class TarjetaEditComponent implements OnInit {
         is_active: tarjeta.is_active,
         is_public: tarjeta.is_public,
       }
-    });
+    };
+    
+    console.log('Datos preparados para patchValue:', datosParaPatch);
+    console.log('Estado del formulario ANTES del patchValue:', this.tarjetaForm.value);
+
+    // Llenar información personal - NUEVO ENFOQUE: Control por control
+    console.log('🔧 Intentando llenar controles individuales...');
+    
+    try {
+      // Información personal
+      this.tarjetaForm.get('personalInfo.name')?.setValue(tarjeta.personal_info?.name || '');
+      this.tarjetaForm.get('personalInfo.title')?.setValue(tarjeta.personal_info?.title || '');
+      this.tarjetaForm.get('personalInfo.location')?.setValue(tarjeta.personal_info?.location || '');
+      
+      console.log('✅ Después de setValue personalInfo:', this.tarjetaForm.get('personalInfo')?.value);
+      
+      // Información de contacto
+      this.tarjetaForm.get('contact.email')?.setValue(tarjeta.contact_info?.email || '');
+      this.tarjetaForm.get('contact.phone')?.setValue(tarjeta.contact_info?.phone || '');
+      this.tarjetaForm.get('contact.website')?.setValue(tarjeta.contact_info?.website || '');
+      this.tarjetaForm.get('contact.linkedin')?.setValue(tarjeta.contact_info?.linkedin || '');
+      this.tarjetaForm.get('contact.twitter')?.setValue(tarjeta.contact_info?.twitter || '');
+      this.tarjetaForm.get('contact.instagram')?.setValue(tarjeta.contact_info?.instagram || '');
+      this.tarjetaForm.get('contact.github')?.setValue(tarjeta.contact_info?.github || '');
+      this.tarjetaForm.get('contact.youtube')?.setValue(tarjeta.contact_info?.youtube || '');
+      this.tarjetaForm.get('contact.tiktok')?.setValue(tarjeta.contact_info?.tiktok || '');
+      this.tarjetaForm.get('contact.whatsapp')?.setValue(tarjeta.contact_info?.whatsapp || '');
+      this.tarjetaForm.get('contact.facebook')?.setValue(tarjeta.contact_info?.facebook || '');
+      
+      // Información "about"
+      this.tarjetaForm.get('about.description')?.setValue(tarjeta.about_info?.description || '');
+      this.tarjetaForm.get('about.experience')?.setValue(tarjeta.about_info?.experience || 0);
+      
+      // Configuración
+      this.tarjetaForm.get('settings.is_active')?.setValue(tarjeta.is_active);
+      this.tarjetaForm.get('settings.is_public')?.setValue(tarjeta.is_public);
+      
+      console.log('✅ Estado FINAL del formulario:', this.tarjetaForm.value);
+      
+      // Forzar múltiples detecciones de cambios
+      console.log('🔄 Forzando detección de cambios...');
+      this.cdr.detectChanges();
+      
+      // Segundo intento con markForCheck
+      this.cdr.markForCheck();
+      
+      // Tercer intento después de un pequeño delay
+      setTimeout(() => {
+        console.log('🔄 Segunda detección de cambios...');
+        this.cdr.detectChanges();
+        console.log('✅ Detecciones de cambios completadas');
+      }, 50);
+      
+    } catch (error) {
+      console.error('❌ Error al llenar formulario:', error);
+    }
 
     // Llenar skills
     if (tarjeta.about_info?.skills) {

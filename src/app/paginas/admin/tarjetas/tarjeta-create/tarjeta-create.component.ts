@@ -191,8 +191,10 @@ export class TarjetaCreateComponent implements OnInit {
     const formValue = this.tarjetaForm.value;
     const requestData: CreateDigitalCardRequest = {
       personalInfo: {
-        ...formValue.personalInfo,
-        photo: this.previewImagen || undefined,
+        name: formValue.personalInfo.name,
+        title: formValue.personalInfo.title || undefined,
+        location: formValue.personalInfo.location || undefined,
+        // No enviamos photo aquí, se sube por separado
       },
       contact: this.hasContactData() ? formValue.contact : undefined,
       about: this.hasAboutData() ? {

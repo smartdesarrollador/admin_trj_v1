@@ -417,7 +417,7 @@
         <!-- Habilidades -->
         <div class="space-y-2">
           <label class="block text-sm font-medium text-gray-700">Habilidades</label>
-          <div class="space-y-3">
+          <div class="space-y-3" formArrayName="skills">
             <div *ngFor="let skill of skillsArray.controls; let i = index" class="flex items-center space-x-2">
               <input
                 type="text"
