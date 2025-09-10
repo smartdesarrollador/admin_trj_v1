@@ -52,18 +52,14 @@ export class TarjetaEditComponent implements OnInit {
   totalSteps = 4;
 
   ngOnInit(): void {
-    console.log('🚀 === DEBUG ngOnInit ===');
     this.route.params.subscribe(params => {
       this.tarjetaId = +params['id'];
-      console.log('📝 Inicializando formulario...');
       this.inicializarFormulario();
-      console.log('📡 Cargando tarjeta...');
       this.cargarTarjeta();
     });
   }
 
   inicializarFormulario(): void {
-    console.log('🛠️ === DEBUG inicializarFormulario ===');
     this.tarjetaForm = this.fb.group({
       // Información Personal (Requerida)
       personalInfo: this.fb.group({
@@ -101,108 +97,21 @@ export class TarjetaEditComponent implements OnInit {
         is_public: [true],
       }),
     });
-    console.log('✅ Formulario inicializado. Estado inicial:', this.tarjetaForm.value);
-    
-    // Suscribirse a cambios del formulario para detectar qué se modifica
-    this.tarjetaForm.valueChanges.subscribe(value => {
-      console.log('🔄 Cambio detectado en el formulario:', value);
-    });
-
-    // Suscribirse a cambios específicos por grupo
-    this.tarjetaForm.get('personalInfo')?.valueChanges.subscribe(value => {
-      console.log('👤 Cambio en personalInfo:', value);
-    });
-
-    this.tarjetaForm.get('contact')?.valueChanges.subscribe(value => {
-      console.log('📞 Cambio en contact:', value);
-      
-      // Log detallado de cada campo de contacto
-      const contactGroup = this.tarjetaForm.get('contact');
-      if (contactGroup) {
-        console.log('📞 Estado individual de campos contact:');
-        console.log('  - email:', contactGroup.get('email')?.value);
-        console.log('  - phone:', contactGroup.get('phone')?.value);
-        console.log('  - website:', contactGroup.get('website')?.value);
-        console.log('  - linkedin:', contactGroup.get('linkedin')?.value);
-        console.log('  - twitter:', contactGroup.get('twitter')?.value);
-        console.log('  - instagram:', contactGroup.get('instagram')?.value);
-        console.log('  - github:', contactGroup.get('github')?.value);
-        console.log('  - youtube:', contactGroup.get('youtube')?.value);
-        console.log('  - tiktok:', contactGroup.get('tiktok')?.value);
-        console.log('  - whatsapp:', contactGroup.get('whatsapp')?.value);
-        console.log('  - facebook:', contactGroup.get('facebook')?.value);
-      }
-    });
-
-    this.tarjetaForm.get('about')?.valueChanges.subscribe(value => {
-      console.log('📋 Cambio en about:', value);
-    });
-
-    this.tarjetaForm.get('settings')?.valueChanges.subscribe(value => {
-      console.log('⚙️ Cambio en settings:', value);
-    });
   }
 
-  // Método para debugging manual - llama desde consola del navegador
-  debugFormState(): void {
-    console.log('🔍 === ESTADO MANUAL DEL FORMULARIO ===');
-    console.log('Formulario completo:', this.tarjetaForm.value);
-    console.log('Formulario válido:', this.tarjetaForm.valid);
-    console.log('Formulario dirty:', this.tarjetaForm.dirty);
-    console.log('Formulario touched:', this.tarjetaForm.touched);
-    
-    // Estado de cada grupo
-    console.log('PersonalInfo estado:', {
-      value: this.tarjetaForm.get('personalInfo')?.value,
-      valid: this.tarjetaForm.get('personalInfo')?.valid,
-      dirty: this.tarjetaForm.get('personalInfo')?.dirty,
-      touched: this.tarjetaForm.get('personalInfo')?.touched
-    });
-    
-    console.log('Contact estado:', {
-      value: this.tarjetaForm.get('contact')?.value,
-      valid: this.tarjetaForm.get('contact')?.valid,
-      dirty: this.tarjetaForm.get('contact')?.dirty,
-      touched: this.tarjetaForm.get('contact')?.touched
-    });
-    
-    console.log('About estado:', {
-      value: this.tarjetaForm.get('about')?.value,
-      valid: this.tarjetaForm.get('about')?.valid,
-      dirty: this.tarjetaForm.get('about')?.dirty,
-      touched: this.tarjetaForm.get('about')?.touched
-    });
-    
-    console.log('Settings estado:', {
-      value: this.tarjetaForm.get('settings')?.value,
-      valid: this.tarjetaForm.get('settings')?.valid,
-      dirty: this.tarjetaForm.get('settings')?.dirty,
-      touched: this.tarjetaForm.get('settings')?.touched
-    });
-  }
 
   cargarTarjeta(): void {
-    console.log('=== DEBUG cargarTarjeta ===');
-    console.log('ID de tarjeta a cargar:', this.tarjetaId);
     this.isLoadingData.set(true);
     this.digitalCardsService.getDigitalCard(this.tarjetaId).subscribe({
       next: (response) => {
-        console.log('✅ Respuesta exitosa de la API:', response);
         this.tarjetaData.set(response.data);
-        console.log('Datos guardados en tarjetaData signal:', this.tarjetaData());
-        
-        // Establecer isLoadingData a false ANTES de llenar el formulario
         this.isLoadingData.set(false);
-        console.log('📱 isLoadingData establecido a false');
         
-        // Dar tiempo al DOM para renderizar el formulario, LUEGO llenarlo
         setTimeout(() => {
-          console.log('⏰ Ejecutando llenarFormulario después del renderizado...');
           this.llenarFormulario();
         }, 200);
       },
       error: (error) => {
-        console.error('Error al cargar tarjeta:', error);
         this.notificationService.error('Error al cargar datos', 'No se pudo cargar la información de la tarjeta. Redirigiendo...');
         setTimeout(() => {
           this.router.navigate(['/admin/tarjetas']);
@@ -213,65 +122,20 @@ export class TarjetaEditComponent implements OnInit {
 
   llenarFormulario(): void {
     const tarjeta = this.tarjetaData();
-    console.log('=== DEBUG llenarFormulario ===');
-    console.log('Datos tarjeta:', tarjeta);
-    console.log('¿Tarjeta existe?:', !!tarjeta);
-    console.log('¿Formulario ya inicializado?:', this.formularioInicializado);
     
     if (!tarjeta) {
-      console.log('❌ No hay datos de tarjeta, saliendo...');
       return;
     }
 
-    // Evitar sobreescribir cambios del usuario
     if (this.formularioInicializado) {
-      console.log('⚠️ Formulario ya inicializado, evitando sobreescribir cambios del usuario');
       return;
     }
 
-    const datosParaPatch = {
-      personalInfo: {
-        name: tarjeta.personal_info?.name || '',
-        title: tarjeta.personal_info?.title || '',
-        location: tarjeta.personal_info?.location || '',
-        photo: tarjeta.personal_info?.photo || '',
-      },
-      contact: {
-        email: tarjeta.contact_info?.email || '',
-        phone: tarjeta.contact_info?.phone || '',
-        website: tarjeta.contact_info?.website || '',
-        linkedin: tarjeta.contact_info?.linkedin || '',
-        twitter: tarjeta.contact_info?.twitter || '',
-        instagram: tarjeta.contact_info?.instagram || '',
-        github: tarjeta.contact_info?.github || '',
-        youtube: tarjeta.contact_info?.youtube || '',
-        tiktok: tarjeta.contact_info?.tiktok || '',
-        whatsapp: tarjeta.contact_info?.whatsapp || '',
-        facebook: tarjeta.contact_info?.facebook || '',
-      },
-      about: {
-        description: tarjeta.about_info?.description || '',
-        experience: tarjeta.about_info?.experience || 0,
-      },
-      settings: {
-        is_active: tarjeta.is_active,
-        is_public: tarjeta.is_public,
-      }
-    };
-    
-    console.log('Datos preparados para patchValue:', datosParaPatch);
-    console.log('Estado del formulario ANTES del patchValue:', this.tarjetaForm.value);
-
-    // Llenar información personal - NUEVO ENFOQUE: Control por control
-    console.log('🔧 Intentando llenar controles individuales...');
-    
     try {
       // Información personal
       this.tarjetaForm.get('personalInfo.name')?.setValue(tarjeta.personal_info?.name || '');
       this.tarjetaForm.get('personalInfo.title')?.setValue(tarjeta.personal_info?.title || '');
       this.tarjetaForm.get('personalInfo.location')?.setValue(tarjeta.personal_info?.location || '');
-      
-      console.log('✅ Después de setValue personalInfo:', this.tarjetaForm.get('personalInfo')?.value);
       
       // Información de contacto
       this.tarjetaForm.get('contact.email')?.setValue(tarjeta.contact_info?.email || '');
@@ -294,28 +158,16 @@ export class TarjetaEditComponent implements OnInit {
       this.tarjetaForm.get('settings.is_active')?.setValue(tarjeta.is_active);
       this.tarjetaForm.get('settings.is_public')?.setValue(tarjeta.is_public);
       
-      console.log('✅ Estado FINAL del formulario:', this.tarjetaForm.value);
-      
-      // Marcar formulario como inicializado para evitar futuras sobreescrituras
       this.formularioInicializado = true;
-      console.log('🔒 Formulario marcado como inicializado');
-      
-      // Forzar múltiples detecciones de cambios
-      console.log('🔄 Forzando detección de cambios...');
       this.cdr.detectChanges();
-      
-      // Segundo intento con markForCheck
       this.cdr.markForCheck();
       
-      // Tercer intento después de un pequeño delay
       setTimeout(() => {
-        console.log('🔄 Segunda detección de cambios...');
         this.cdr.detectChanges();
-        console.log('✅ Detecciones de cambios completadas');
       }, 50);
       
     } catch (error) {
-      console.error('❌ Error al llenar formulario:', error);
+      // Error handling silently
     }
 
     // Llenar skills
@@ -423,13 +275,7 @@ export class TarjetaEditComponent implements OnInit {
   }
 
   onSubmit(): void {
-    console.log('🚀 === DEBUG onSubmit ===');
-    console.log('Estado completo del formulario:', this.tarjetaForm.value);
-    console.log('¿Formulario válido?:', this.tarjetaForm.valid);
-    console.log('Errores del formulario:', this.tarjetaForm.errors);
-
     if (this.tarjetaForm.invalid) {
-      console.log('❌ Formulario inválido, marcando campos como tocados');
       this.markAllGroupsAsTouched();
       this.notificationService.validationError();
       return;
@@ -438,9 +284,7 @@ export class TarjetaEditComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    // Preparar datos para la API
     const formValue = this.tarjetaForm.value;
-    console.log('📄 Valor del formulario RAW:', formValue);
 
     const requestData: UpdateDigitalCardRequest = {
       personalInfo: formValue.personalInfo,
@@ -453,25 +297,13 @@ export class TarjetaEditComponent implements OnInit {
       is_public: formValue.settings.is_public,
     };
 
-    console.log('📦 Datos preparados para enviar a la API:', requestData);
-    console.log('🔍 Detalle de cada sección:');
-    console.log('  - Personal Info:', requestData.personalInfo);
-    console.log('  - Contact Info:', requestData.contact);
-    console.log('  - About Info:', requestData.about);
-    console.log('  - Settings:', { is_active: requestData.is_active, is_public: requestData.is_public });
-
     const cardName = formValue.personalInfo.name || 'Tarjeta';
 
-    console.log('📡 Enviando datos a la API...');
     this.digitalCardsService.updateDigitalCard(this.tarjetaId, requestData).subscribe({
       next: (response) => {
-        console.log('✅ Respuesta exitosa de la API:', response);
-        // Si hay imagen nueva, subirla
         if (this.imagenSeleccionada) {
-          console.log('📸 Hay imagen nueva, procediendo a subirla...');
           this.uploadImage(cardName);
         } else {
-          console.log('✅ Actualización completada sin imagen');
           this.isLoading.set(false);
           this.notificationService.cardUpdated(cardName);
           setTimeout(() => {
@@ -480,13 +312,6 @@ export class TarjetaEditComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('❌ Error al actualizar tarjeta:', error);
-        console.error('❌ Detalles del error:', {
-          status: error.status,
-          statusText: error.statusText,
-          message: error.message,
-          error: error.error
-        });
         this.isLoading.set(false);
         this.notificationService.handleApiError(error, 'actualizar la tarjeta');
       },
@@ -509,7 +334,6 @@ export class TarjetaEditComponent implements OnInit {
         this.isLoading.set(false);
         this.notificationService.cardUpdated(cardName);
         this.notificationService.imageUploadError('Tarjeta actualizada correctamente, pero hubo un problema al subir la imagen.');
-        console.error('Error al subir imagen:', error);
         setTimeout(() => {
           this.router.navigate(['/admin/tarjetas']);
         }, 3000);
@@ -519,21 +343,14 @@ export class TarjetaEditComponent implements OnInit {
 
   private hasContactData(): boolean {
     const contactValue = this.tarjetaForm.get('contact')?.value;
-    console.log('🔍 hasContactData - contactValue:', contactValue);
-    const hasData = Object.values(contactValue).some(value => value && (value as string).trim() !== '');
-    console.log('🔍 hasContactData - resultado:', hasData);
-    return hasData;
+    return Object.values(contactValue).some(value => value && (value as string).trim() !== '');
   }
 
   private hasAboutData(): boolean {
     const aboutValue = this.tarjetaForm.get('about')?.value;
-    console.log('🔍 hasAboutData - aboutValue:', aboutValue);
-    console.log('🔍 hasAboutData - skillsArray.length:', this.skillsArray.length);
-    const hasData = aboutValue.description?.trim() || 
+    return aboutValue.description?.trim() || 
            this.skillsArray.length > 0 || 
            aboutValue.experience > 0;
-    console.log('🔍 hasAboutData - resultado:', hasData);
-    return hasData;
   }
 
   private markAllGroupsAsTouched(): void {
@@ -572,7 +389,6 @@ export class TarjetaEditComponent implements OnInit {
             this.notificationService.success('Imagen eliminada', 'La imagen se eliminó correctamente.');
           },
           error: (error) => {
-            console.error('Error al eliminar imagen:', error);
             this.notificationService.error('Error al eliminar', 'No se pudo eliminar la imagen.');
           }
         });
