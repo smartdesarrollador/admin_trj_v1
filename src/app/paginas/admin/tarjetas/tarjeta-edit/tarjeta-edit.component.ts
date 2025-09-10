@@ -286,8 +286,12 @@ export class TarjetaEditComponent implements OnInit {
 
     const formValue = this.tarjetaForm.value;
 
+    // Preparar personalInfo sin incluir photo (se maneja por separado)
+    const personalInfo = { ...formValue.personalInfo };
+    delete personalInfo.photo; // Excluir photo para no sobrescribir imagen actual
+
     const requestData: UpdateDigitalCardRequest = {
-      personalInfo: formValue.personalInfo,
+      personalInfo: personalInfo,
       contact: this.hasContactData() ? formValue.contact : undefined,
       about: this.hasAboutData() ? {
         ...formValue.about,
