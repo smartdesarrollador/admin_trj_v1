@@ -52,13 +52,13 @@ export interface AboutInfo {
 
 // Interfaces para operaciones CRUD (aligned with Laravel API)
 export interface CreateDigitalCardRequest {
-  personal_info: {
+  personalInfo: {
     name: string;
     title?: string;
     location?: string;
     photo?: string;
   };
-  contact_info?: {
+  contact?: {
     email?: string;
     phone?: string;
     linkedin?: string;
@@ -71,7 +71,7 @@ export interface CreateDigitalCardRequest {
     whatsapp?: string;
     facebook?: string;
   };
-  about_info?: {
+  about?: {
     description?: string;
     skills?: string[];
     experience?: number;
@@ -81,13 +81,13 @@ export interface CreateDigitalCardRequest {
 }
 
 export interface UpdateDigitalCardRequest {
-  personal_info?: {
+  personalInfo?: {
     name?: string;
     title?: string;
     location?: string;
     photo?: string;
   };
-  contact_info?: {
+  contact?: {
     email?: string;
     phone?: string;
     linkedin?: string;
@@ -100,7 +100,7 @@ export interface UpdateDigitalCardRequest {
     whatsapp?: string;
     facebook?: string;
   };
-  about_info?: {
+  about?: {
     description?: string;
     skills?: string[];
     experience?: number;
